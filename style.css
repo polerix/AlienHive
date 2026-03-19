@@ -1,0 +1,270 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+    --bg-dark: #00050a;
+    --steel: linear-gradient(180deg, #d4d4d4 0%, #a0a0a0 45%, #808080 50%, #a0a0a0 55%, #d4d4d4 100%);
+    --brushed: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 3px);
+    --glass-amber: rgba(255, 160, 0, 0.15);
+    --glass-cyan: rgba(0, 255, 255, 0.1);
+    --vfd-cyan: #00ffff;
+    --vfd-amber: #ffcc00;
+    --panel-border: #505050;
+    --text-primary: #ffffff;
+    --text-muted: #808080;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+canvas {
+    display: block;
+    image-rendering: pixelated;
+}
+
+/* ── 70s SONY HIFI HUD ── */
+
+#hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 10;
+}
+
+/* Top & Bottom Bars (The Chassis) */
+.hud-top, .hud-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 40px;
+    background: var(--steel), var(--brushed);
+    border-bottom: 2px solid var(--panel-border);
+    padding: 0 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.hud-bottom {
+    border-bottom: none;
+    border-top: 2px solid var(--panel-border);
+}
+
+/* The Glass Indicators */
+.panel {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 4px 12px;
+    display: flex;
+    flex-direction: column; /* Allow vertical stacking for breakdowns */
+    align-items: center;
+    gap: 5px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 1px 1px rgba(255,255,255,0.2);
+    pointer-events: auto;
+    position: relative;
+}
+
+.panel.clickable {
+    cursor: pointer;
+}
+
+.panel.clickable:hover {
+    background: rgba(20, 20, 20, 0.8);
+    border-color: rgba(0, 255, 255, 0.3);
+}
+
+/* Breakdown Display */
+.breakdown-panel {
+    position: absolute;
+    top: 45px;
+    left: 0;
+    min-width: 150px;
+    background: rgba(10, 10, 15, 0.95);
+    border: 1px solid var(--panel-border);
+    padding: 10px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    z-index: 20;
+}
+
+.breakdown-panel.hidden {
+    display: none;
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+}
+
+.breakdown-item span:last-child {
+    color: var(--vfd-cyan);
+    font-weight: 700;
+}
+
+/* VFD Display Style */
+.stat-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.stat-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+}
+
+.stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--vfd-cyan);
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+}
+
+/* Tuning / Level Indicator */
+.game-info {
+    color: var(--vfd-amber);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 8px rgba(255, 204, 0, 0.4);
+}
+
+/* Controls styled as switches/buttons */
+.unit-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.control-btn {
+    background: #303030;
+    background: linear-gradient(180deg, #404040 0%, #202020 100%);
+    border: 1px solid #101010;
+    border-radius: 2px;
+    color: #a0a0a0;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 2px 0 #000;
+    transition: all 0.1s;
+    text-transform: uppercase;
+}
+
+.control-btn:hover:not(:disabled) {
+    color: #fff;
+    border-color: #505050;
+}
+
+.control-btn:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: none;
+}
+
+.control-btn:disabled {
+    opacity: 0.3;
+}
+
+.speed-control {
+    display: flex;
+    gap: 10px;
+}
+
+.speed-tag {
+    font-size: 10px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.speed-tag.active {
+    color: var(--vfd-cyan);
+    text-decoration: underline;
+}
+
+/* Game State Overlay */
+#overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 5, 10, 0.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+#overlay.hidden {
+    display: none;
+}
+
+#overlay-panel {
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid var(--panel-border);
+    padding: 40px 70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    box-shadow: 0 0 80px rgba(0,0,0,0.9), inset 0 0 30px rgba(0,0,0,0.6);
+}
+
+#overlay-title {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 8px;
+    color: var(--vfd-amber);
+    text-shadow: 0 0 24px rgba(255, 204, 0, 0.5);
+}
+
+#overlay-score {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 3px;
+}
+
+#overlay-btn {
+    margin-top: 8px;
+    padding: 8px 32px;
+    font-size: 11px;
+    letter-spacing: 3px;
+}
+
+/* Overlay Grain */
+body::after {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: url("https://www.transparenttextures.com/patterns/carbon-fibre.png");
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: 100;
+}

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xeno Hive Level Editor</title>
+    <link rel="stylesheet" href="editor.css">
+</head>
+
+<body>
+    <div id="editor-layout">
+        <div id="panel-left" class="panel">
+            <div class="panel-tabs">
+                <div class="panel-tab active" id="tab-sprites" onclick="app.switchTab('sprites')">Sprites</div>
+                <div class="panel-tab" id="tab-prefabs" onclick="app.switchTab('prefabs')">Prefabs</div>
+            </div>
+
+            <div id="sprites-container" style="display: flex; flex-direction: column; height: 100%;">
+                <h3>Library</h3>
+                <input type="text" id="sprite-search" placeholder="Search sprites...">
+                <div id="sprite-list" style="overflow-y: auto; flex-grow: 1;">
+                    <!-- Sprites loaded here -->
+                </div>
+                <div
+                    style="padding: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted);">
+                    Select a sprite to use with tools.
+                </div>
+            </div>
+
+            <div id="prefabs-container" style="display: none; flex-direction: column; height: 100%;">
+                <h3>Saved Prefabs</h3>
+                <div id="prefab-list" style="overflow-y: auto; flex-grow: 1;">
+                    <!-- Prefabs listed here -->
+                </div>
+                <div
+                    style="padding: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted);">
+                    Drag prefabs onto the canvas.
+                </div>
+            </div>
+
+            <h3>Tools</h3>
+            <div class="tool-section">
+                <button id="tool-select" class="active">Select (V)</button>
+                <button id="tool-place">Place (B)</button>
+                <button id="tool-wire">Wire (W)</button>
+                <button id="tool-erase">Erase (E)</button>
+            </div>
+        </div>
+
+        <div id="panel-center">
+            <div id="toolbar-top">
+                <select id="editor-mode"
+                    style="margin-right: 15px; padding: 4px; font-weight: bold; background-color: var(--accent); color: white; border: none; border-radius: 3px;">
+                    <option value="terrain">Terrain Mode 🏔️</option>
+                    <option value="logic">Logic Mode ⚙️</option>
+                </select>
+                <span style="border-left: 1px solid var(--border); margin-right: 10px;"></span>
+                <button id="btn-new">New</button>
+                <button id="btn-save">Save JSON</button>
+                <button id="btn-load">Load JSON</button>
+                <input type="file" id="file-load" accept=".json" style="display: none;">
+                <span class="spacer"></span>
+                <span>Grid: <input type="number" id="grid-size" value="40" style="width: 50px;">px</span>
+            </div>
+            <div id="canvas-container">
+                <canvas id="editor-canvas"></canvas>
+            </div>
+        </div>
+
+        <div id="panel-right" class="panel">
+            <h3>Hierarchy</h3>
+            <div id="hierarchy-tree">
+                <!-- Objects and logic groups -->
+            </div>
+            <div class="action-buttons">
+                <button id="btn-group">Group Selected</button>
+                <button id="btn-ungroup">Ungroup</button>
+            </div>
+
+            <h3>Properties & Behavior</h3>
+            <div id="properties-panel">
+                <!-- Dynamic properties based on selection -->
+                <p class="muted">Select an object to edit.</p>
+            </div>
+
+            <div id="animation-panel" style="display:none; padding: 10px; border-top: 1px solid var(--border);">
+                <h4>Animation States</h4>
+                <div class="prop-row">
+                    <select id="anim-state-select" style="flex-grow: 1; margin-right: 5px;"></select>
+                    <button id="btn-delete-state" title="Delete State">X</button>
+                </div>
+                <div class="prop-row" style="margin-top: 5px;">
+                    <input type="text" id="new-state-name" placeholder="New state..."
+                        style="width: 80px; margin-right: 5px;">
+                    <button id="btn-add-state">Add State</button>
+                </div>
+                <div class="prop-row" style="margin-top: 5px;">
+                    <label style="width: 50px;">Loop</label>
+                    <select id="anim-loop-select" style="flex-grow: 1;">
+                        <option value="loop_until_stopped">Loop Until Stopped</option>
+                        <option value="loop_until_linked">Loop Until Linked Action</option>
+                        <option value="loop_until_disappear">Loop Until Disappear</option>
+                        <option value="run_once_stay">Run Once - Stay</option>
+                        <option value="run_once_disappear">Run Once - Disappear</option>
+                    </select>
+                </div>
+                <div class="prop-row" style="margin-top: 5px;">
+                    <label style="width: 50px;">Speed</label>
+                    <select id="anim-speed-select" style="flex-grow: 1;">
+                        <option value="walk">Walk (250ms)</option>
+                        <option value="run">Run (100ms)</option>
+                        <option value="slow">Slow (500ms)</option>
+                        <option value="custom">Custom...</option>
+                    </select>
+                </div>
+                <div class="prop-row" id="anim-speed-custom-container" style="margin-top: 5px; display: none;">
+                    <label style="width: 50px;">MS</label>
+                    <input type="number" id="anim-speed-value" value="150" style="flex-grow: 1;">
+                </div>
+                <hr style="border-color:var(--border); margin:10px 0;">
+                <div class="prop-row">
+                    <button id="btn-add-frame">Add Frame</button>
+                    <button id="btn-play-anim" style="margin-left:5px;">Play</button>
+                </div>
+                <div id="anim-frames-list" style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
+                    <!-- Frames -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="editor.js"></script>
+</body>
+
+</html>
