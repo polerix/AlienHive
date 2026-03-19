@@ -173,6 +173,11 @@ class Game {
         };
     }
 
+    isWallAt(px, py) {
+        const tile = this.map.find(t => t.x === Math.floor(px / this.tileSize) && t.y === Math.floor(py / this.tileSize));
+        return tile ? tile.isWall : false;
+    }
+
     generateLevel(floor) {
         const rooms = [];
         const map = [];
@@ -246,12 +251,13 @@ class Game {
         });
 
         // Initial Populating
-        const xenoBase = { angle: 0, state: 'idle', target: null, buildTimer: 0, spawnTimer: 0, attackTimer: 0, infected: false, infectionTimer: 0 };
+        const entBase = { state: 'idle', facing: 1, animFrame: 0, animTimer: 0, attackTimer: 0, infected: false, infectionTimer: 0 };
+        const xenoBase = { ...entBase, target: null, buildTimer: 0, spawnTimer: 0 };
         rooms.forEach((r, idx) => {
             if (idx === 0) return;
             // Humans
-            if (idx === 1) entities.push({ type: 'corpo', x: (r.x + 2)*40, y: (r.y + 2)*40, hp: 100, state: 'waiting', attackTimer: 0, infected: false, infectionTimer: 0 });
-            else entities.push({ type: 'colonist', x: (r.x + 2)*40, y: (r.y + 2)*40, hp: 100, state: 'idle', attackTimer: 0, infected: false, infectionTimer: 0 });
+            if (idx === 1) entities.push({ type: 'corpo', x: (r.x + 2)*40, y: (r.y + 2)*40, hp: 100, ...entBase, state: 'waiting', buildTimer: 0 });
+            else entities.push({ type: 'colonist', x: (r.x + 2)*40, y: (r.y + 2)*40, hp: 100, ...entBase });
             // Xenos: eggs in most rooms, drones/warriors in later rooms, scaled by floor
             if (idx % 2 === 0) entities.push({ type: 'xeno-egg', x: (r.x + 3)*40, y: (r.y + 3)*40, hp: 10, ...xenoBase });
             if (idx > 2) {
@@ -267,7 +273,8 @@ class Game {
     spawnEntity(type, x, y) {
         this.entities.push({
             id: Math.random().toString(36).substr(2, 9),
-            type, x, y, hp: 100, angle: 0, state: 'idle', target: null,
+            type, x, y, hp: 100, state: 'idle', target: null,
+            facing: 1, animFrame: 0, animTimer: 0,
             buildTimer: 0, spawnTimer: 0, attackTimer: 0,
             infected: false, infectionTimer: 0
         });
@@ -299,17 +306,19 @@ class Game {
             if (this.keys['KeyA'] || this.keys['ArrowLeft']) vx -= 1;
             if (this.keys['KeyD'] || this.keys['ArrowRight']) vx += 1;
             if (vx !== 0 || vy !== 0) {
-                if (vx > 0) this.player.facing = 1;
-                else if (vx < 0) this.player.facing = -1;
-                
                 const mag = Math.hypot(vx, vy);
                 const speed = 3 * (dt / 16);
                 const nextX = this.player.x + (vx / mag) * speed;
                 const nextY = this.player.y + (vy / mag) * speed;
-                const tile = this.map.find(t => t.x === Math.floor(nextX/40) && t.y === Math.floor(nextY/40));
-                if (!tile || !tile.isWall) { this.player.x = nextX; this.player.y = nextY; }
+                if (!this.isWallAt(nextX, nextY)) { this.player.x = nextX; this.player.y = nextY; }
+                // Walk cycle
+                this.player.animTimer += dt;
+                if (this.player.animTimer > 180) { this.player.animTimer = 0; this.player.frame = this.player.frame === 1 ? 2 : 1; }
+            } else {
+                this.player.frame = 0;
+                this.player.animTimer = 0;
             }
-            // Rotation is locked to horizontal facing, but angle is used for aiming/rendering
+            // Facing locked to mouse aim
             const worldMouse = this.screenToWorld(this.mouse.x, this.mouse.y);
             if (worldMouse.x > this.player.x) this.player.facing = 1;
             else this.player.facing = -1;
@@ -363,9 +372,14 @@ class Game {
                 if (target) {
                     const dx = target.x - en.x, dy = target.y - en.y;
                     const dist = Math.hypot(dx, dy);
-                    en.x += (dx / dist) * 3 * (dt / 16);
-                    en.y += (dy / dist) * 3 * (dt / 16);
-                    en.angle = Math.atan2(dy, dx);
+                    if (dist > 0) {
+                        const nx = en.x + (dx / dist) * 3 * (dt / 16);
+                        const ny = en.y + (dy / dist) * 3 * (dt / 16);
+                        if (!this.isWallAt(nx, ny)) { en.x = nx; en.y = ny; }
+                    }
+                    en.facing = dx < 0 ? -1 : 1;
+                    en.animTimer += dt;
+                    if (en.animTimer > 120) { en.animTimer = 0; en.animFrame = en.animFrame === 1 ? 2 : 1; }
                     if (dist < 22) {
                         if (target === this.player) { this.player.hp -= 35; }
                         else { target.infected = true; target.infectionTimer = 0; }
@@ -388,9 +402,17 @@ class Game {
                     const dx = target.x - en.x, dy = target.y - en.y;
                     const dist = Math.hypot(dx, dy);
                     const speed = en.type === 'xeno-warrior' ? 2.2 : 1.8;
-                    if (dist > 20) { en.x += (dx / dist) * speed * (dt / 16); en.y += (dy / dist) * speed * (dt / 16); }
-                    en.angle = Math.atan2(dy, dx);
-                    en.attackTimer = (en.attackTimer || 0) + dt;
+                    if (dist > 20) {
+                        const nx = en.x + (dx / dist) * speed * (dt / 16);
+                        const ny = en.y + (dy / dist) * speed * (dt / 16);
+                        if (!this.isWallAt(nx, ny)) { en.x = nx; en.y = ny; }
+                        en.facing = dx < 0 ? -1 : 1;
+                        en.animTimer += dt;
+                        if (en.animTimer > 200) { en.animTimer = 0; en.animFrame = en.animFrame === 1 ? 2 : 1; }
+                    } else {
+                        en.animFrame = 0;
+                    }
+                    en.attackTimer += dt;
                     if (dist < 28 && en.attackTimer > 900) {
                         en.attackTimer = 0;
                         if (target === this.player) { this.player.hp -= 12; }
@@ -491,6 +513,18 @@ class Game {
         Object.keys(detailTerrans).forEach(k => { if(document.getElementById(`count-detail-${k}`)) document.getElementById(`count-detail-${k}`).innerText = detailTerrans[k].toString().padStart(2, '0'); });
     }
 
+    getSpriteFor(en) {
+        if (en.type === 'xeno-egg') return 'xeno-egg-001.png';
+        if (en.type.includes('vat') || en.type.includes('tank')) return `${en.type}.png`;
+        const f = en.animFrame || 0;
+        const walk = f === 1 ? 'walk-a' : f === 2 ? 'walk-b' : null;
+        if (en.type === 'xeno-facehugger') return `xeno-facehugger-${walk || 'walk-a'}.png`;
+        if (en.type.includes('xeno')) return walk ? `${en.type}-${walk}.png` : `${en.type}-idle.png`;
+        if (en.infected) return `${en.type}-infected.png`;
+        const prefix = en.type === 'synth' ? 'synth-active' : `${en.type}-alive`;
+        return walk ? `${prefix}-${walk}.png` : `${prefix}-idle.png`;
+    }
+
     render() {
         const { ctx, canvas, zoom, camera, tileSize } = this;
         ctx.fillStyle = '#00050a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -511,26 +545,24 @@ class Game {
         });
 
         this.entities.sort((a, b) => a.y - b.y).forEach(en => {
-            let sName;
-            if (en.type === 'xeno-egg') sName = 'xeno-egg-001.png';
-            else if (en.type === 'xeno-facehugger') sName = 'xeno-facehugger-walk-a.png';
-            else if (en.type.includes('xeno')) sName = `${en.type}-idle.png`;
-            else if (en.type.includes('vat') || en.type.includes('tank')) sName = `${en.type}.png`;
-            else if (en.type === 'synth') sName = 'synth-active-idle.png';
-            else sName = `${en.type}-alive-idle.png`;
+            const sName = this.getSpriteFor(en);
             const img = this.sprites[sName] || this.sprites[`${en.type}.png`];
             if (img) {
-                ctx.save(); ctx.translate(en.x, en.y);
-                if (en.type.includes('xeno')) ctx.rotate(en.angle);
+                ctx.save();
+                ctx.translate(en.x, en.y);
+                ctx.scale(en.facing || 1, 1);
                 ctx.drawImage(img, -20, -20, 40, 40);
                 ctx.restore();
             }
         });
 
         if (this.player.hp > 0) {
-            ctx.save(); ctx.translate(this.player.x, this.player.y);
+            const f = this.player.frame;
+            const pSprite = f === 1 ? 'marine-alive-walk-a.png' : f === 2 ? 'marine-alive-walk-b.png' : 'marine-alive-idle.png';
+            ctx.save();
+            ctx.translate(this.player.x, this.player.y);
             ctx.scale(this.player.facing, 1);
-            ctx.drawImage(this.sprites['marine-alive-idle.png'], -20, -20, 40, 40);
+            ctx.drawImage(this.sprites[pSprite], -20, -20, 40, 40);
             ctx.restore();
         }
 
